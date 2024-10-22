@@ -9,6 +9,7 @@ using System.IO;
 using System.Text;
 using Org.BouncyCastle.Asn1;
 using Org.BouncyCastle.Math;
+using Org.BouncyCastle.Math.EC;
 using Org.BouncyCastle.Utilities.Encoders;
 
 internal class Program
@@ -31,7 +32,11 @@ internal class Program
         ECKeyParameters privateEcKeyReloaded2 = ImportPrivateFromSec1Pem(privateSec1Pem);
         ECKeyParameters publicEcKeyReloaded1 = (ECKeyParameters)ImportPublicFromSpkiPem(publicSpkiPem);
 
-        // Test 4: ECDH
+        // Test 4: Derive public EC Key key from private EC key
+        ECKeyParameters derivedPublicEcKey = ExtractPublicEcKeyFromPrivateEcKey(privateEcKey);
+        Console.WriteLine(ExportPublicAsSpkiPem(derivedPublicEcKey));
+        
+        // Test 5: ECDH
         (ECKeyParameters privateEcKeyOtherSide, ECKeyParameters publicEcKeyOtherSide) = CreateEcKeyPair(new DerObjectIdentifier("1.3.132.0.10"));
         byte[] sharedSecret = CreateEcdhSharedSecret(privateEcKeyReloaded1, publicEcKeyOtherSide);
         byte[] sharedSecretOtherSide = CreateEcdhSharedSecret(privateEcKeyOtherSide, publicEcKeyReloaded1);
@@ -39,7 +44,7 @@ internal class Program
         Console.WriteLine(Hex.ToHexString(sharedSecretOtherSide));
         Console.WriteLine();
 
-        // Test 5a: ECDSA: IEEE P1363 format
+        // Test 6a: ECDSA: IEEE P1363 format
         byte[] message = Encoding.UTF8.GetBytes("The quick brown fox jumps ove rthe lazy dog");
         
         byte[] signature1 = EcSign("SHA-256withPLAIN-ECDSA", message, privateEcKeyReloaded1);
@@ -48,7 +53,7 @@ internal class Program
         Console.WriteLine(verified1);
         Console.WriteLine();
         
-        // Test 5b: ECDSA: ASN.1/DER format
+        // Test 6b: ECDSA: ASN.1/DER format
         byte[] signature2 = EcSign("SHA-256withECDSA", message, privateEcKeyReloaded2);
         bool verified2 = EcVerify("SHA-256withECDSA", message, signature2, publicEcKeyReloaded1);
         Console.WriteLine(Hex.ToHexString(signature2));
@@ -104,6 +109,12 @@ internal class Program
         return (AsymmetricKeyParameter)pemReader.ReadObject();
     }
 
+    public static ECKeyParameters ExtractPublicEcKeyFromPrivateEcKey(ECKeyParameters privateEcKey)
+    {
+        ECPoint publicEcPoint = privateEcKey.Parameters.G.Multiply(((ECPrivateKeyParameters)privateEcKey).D); 
+        return new ECPublicKeyParameters("EC", publicEcPoint, privateEcKey.PublicKeyParamSet);
+    }
+    
     public static byte[] CreateEcdhSharedSecret(ECKeyParameters privateEcKey, ECKeyParameters publicEcKeyOtherSide)
     {
         IBasicAgreement agreementOtherSide = AgreementUtilities.GetBasicAgreement("ECDH");
