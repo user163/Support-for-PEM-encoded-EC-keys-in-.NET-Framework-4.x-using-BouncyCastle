@@ -55,7 +55,7 @@ internal class Program
         Console.WriteLine(verified2);
     }
 
-    public static (ECKeyParameters privateRsa, ECKeyParameters publicRsa) CreateEcKeyPair(DerObjectIdentifier oid) // X9ObjectIdentifiers.Prime256v1: P-256 aka secp256r1; 1.3.132.0.10: secp256k1
+    public static (ECKeyParameters privateEc, ECKeyParameters publicEc) CreateEcKeyPair(DerObjectIdentifier oid) // X9ObjectIdentifiers.Prime256v1: P-256 aka secp256r1; 1.3.132.0.10: secp256k1
     {
         ECKeyPairGenerator ecKeyPairGenerator = new ECKeyPairGenerator();
         ecKeyPairGenerator.Init(new ECKeyGenerationParameters(oid, new SecureRandom()));
